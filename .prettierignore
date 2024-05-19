@@ -1,0 +1,4 @@
+**/docs/
+**/.devcontainer/devcontainer.json
+**/static/css/actsys-bootstrap.min.css
+**/static/css/actsys-bootstrap.min.css.map

@@ -1,0 +1,54 @@
+name: Unit tests for ActSys-UI
+
+defaults:
+  run:
+    working-directory: actsys-ui
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches:
+      - main
+
+env:
+  PYTHONUNBUFFERED: 1
+  FORCE_COLOR: 1
+
+jobs:
+  test-unit-actsys-ui:
+    name: test-unit-actsys-ui on Py${{ matrix.python-version }} ${{ matrix.label }}
+
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - python-version: "3.9"
+            hatch-env: all.py3.9
+          - python-version: "3.10"
+            hatch-env: all.py3.10
+          - python-version: "3.11"
+            hatch-env: all.py3.11
+          - python-version: "3.12"
+            hatch-env: all.py3.12
+          - python-version: "3.11"
+            hatch-env: lower-bounds
+            label: lower bounds
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install Hatch
+        run: pip install --upgrade hatch
+
+      - name: List dependencies
+        run: hatch run ${{ matrix.hatch-env }}:pip freeze
+
+      - name: Run unit tests
+        run: hatch run ${{ matrix.hatch-env }}:test-unit-coverage

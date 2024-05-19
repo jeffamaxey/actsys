@@ -1,0 +1,93 @@
+# THIS IS NOT DESCRIBING A PACKAGE, but the DEV environment of this mono-repo
+# In order to install the packages of this mono-repo from source, refer to the pyproject.toml in the relevant folder
+
+[lint.isort]
+known-first-party = ["actsys"]
+
+[lint.pydocstyle]
+convention = "google"
+
+[lint.pylint]
+max-args = 6
+
+[project]
+authors = [
+  {name = "ActSys Team"}
+]
+description = "ActSys is a package to facilitate actuarial analytics."
+name = "actsys"
+
+[tool.bandit]
+  exclude_dirs = ["tests"]
+
+[tool.black]
+line-length = 120
+target-version = ["py38"]
+
+[tool.codespell]
+builtin = "clear,rare,en-GB_to_en-US"
+ignore-words-list = "grey,ned,sav"
+skip = "*.min.css.map,*.min.css,.vale/*"
+
+[tool.mypy]
+# strict checks : strict = true
+check_untyped_defs = true
+disallow_any_generics = true
+disallow_incomplete_defs = false
+disallow_subclassing_any = false
+disallow_untyped_calls = false
+disallow_untyped_decorators = false
+disallow_untyped_defs = false
+no_implicit_optional = true
+no_implicit_reexport = false
+plugins = ["pydantic.mypy"]
+strict_equality = true
+warn_redundant_casts = true
+warn_return_any = false
+warn_unused_configs = true
+warn_unused_ignores = true
+
+[[tool.mypy.overrides]]
+disable_error_code = "name-defined"
+module = "actsys.models.types"
+
+[tool.pydantic-mypy]
+init_forbid_extra = true
+init_typed = true
+warn_required_dynamic_aliases = true
+warn_untyped_fields = true
+
+[tool.ruff]
+line-length = 120
+target-version = "py38"
+
+[tool.ruff.lint]
+# see: https://beta.ruff.rs/docs/rules/
+ignore = [
+  "D104",  # undocumented-public-package
+  "D401",  # first-line should be in imperative mood
+  # D407 needs to be ignored as it otherwise messes up the formatting in our API docs
+  "D407"  # missing dashed underline after section
+]
+ignore-init-module-imports = true
+select = [
+  "E",  # pycodestyle errors
+  "W",  # pycodestyle warnings
+  "F",  # pyflakes
+  "I",  # isort
+  "D",  # pydocstyle
+  "T201",  # print
+  "C4",  # flake8-comprehensions
+  "RUF",  # Ruff-specific rules
+  "PL"  # pylint
+]
+
+[tool.ruff.lint.per-file-ignores]
+# Ignore current false positives for pydantic models subclassing across files
+# See: https://github.com/astral-sh/ruff/issues/5243#issuecomment-1860776975
+"**/models/**" = ["RUF012"]
+# Tests can use magic values, assertions, and relative imports, ignore missing docstrings,
+# compare to empty string
+"**/tests/**" = ["PLR2004", "S101", "TID252", "D100", "D101", "D102", "D103", "PLC1901", "RUF012"]
+# Ignore import violations in all __init__.py files
+"__init__.py" = ["E402", "F401"]

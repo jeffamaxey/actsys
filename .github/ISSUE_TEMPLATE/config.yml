@@ -1,0 +1,11 @@
+# Documentation for this file can be found at:
+# https://help.github.com/en/github/building-a-strong-community/configuring-issue-templates-for-your-repository
+
+blank_issues_enabled: false
+contact_links:
+  - name: "Blank issue (maintainers only)"
+    url: https://github.com/jeffamaxey/actsys/issues/new
+    about: For maintainers only.
+  - name: Documentation
+    url: https://actsys.readthedocs.io
+    about: To learn more about how ActSys works

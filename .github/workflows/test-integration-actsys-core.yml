@@ -1,0 +1,77 @@
+name: Integration tests for ActSys
+
+defaults:
+  run:
+    working-directory: actsys-core
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches:
+      - main
+
+env:
+  PYTHONUNBUFFERED: 1
+  FORCE_COLOR: 1
+
+jobs:
+  test-integration-actsys-core:
+    name: test-integration-actsys-core on Py${{ matrix.python-version }} ${{ matrix.label }}
+
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - python-version: "3.8"
+            hatch-env: all.py3.8
+          - python-version: "3.9"
+            hatch-env: all.py3.9
+          - python-version: "3.10"
+            hatch-env: all.py3.10
+          - python-version: "3.11"
+            hatch-env: all.py3.11
+          - python-version: "3.12"
+            hatch-env: all.py3.12
+          - python-version: "3.11"
+            hatch-env: lower-bounds
+            label: lower bounds
+
+    steps:
+      - uses: actions/checkout@v4
+
+      # Pinned Chrome version because chromedriver v120 recognized as chrome-headless-shell instead of chrome
+      # https://github.com/plotly/dash/issues/2712
+      # https://bugs.chromium.org/p/chromedriver/issues/detail?id=4665
+      # https://github.com/jeffamaxey/actsys/pull/215/
+      # If these are fixed then this whole step can be removed.
+      - name: Install Chrome and chromedriver
+        run: |
+          export chrome_version=119.0.6045.105
+          sudo apt-get update || true
+          sudo apt-get install libu2f-udev -y
+          wget "https://dl.google.com/linux/chrome/deb/pool/main/g/google-chrome-stable/google-chrome-stable_$chrome_version-1_amd64.deb"
+          sudo apt-get install -y --allow-downgrades ./google-chrome-stable_$chrome_version-1_amd64.deb
+          rm google-chrome-stable_$chrome_version-1_amd64.deb
+
+          wget https://storage.googleapis.com/chrome-for-testing-public/$chrome_version/linux64/chromedriver-linux64.zip
+          unzip chromedriver-linux64.zip
+          cd chromedriver-linux64
+          sudo mv chromedriver /usr/bin/chromedriver
+          sudo chown root:root /usr/bin/chromedriver
+          sudo chmod +x /usr/bin/chromedriver
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install Hatch
+        run: pip install --upgrade hatch
+
+      - name: List dependencies
+        run: hatch run ${{ matrix.hatch-env }}:pip freeze
+
+      - name: Run integration tests
+        run: hatch run ${{ matrix.hatch-env }}:test-integration

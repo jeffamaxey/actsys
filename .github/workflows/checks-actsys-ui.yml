@@ -1,0 +1,58 @@
+name: Checks for ActSys-UI
+
+defaults:
+  run:
+    working-directory: actsys-ui
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "actsys-ui/**"
+  pull_request:
+    branches:
+      - "main"
+    paths:
+      - "actsys-ui/**"
+
+env:
+  PYTHONUNBUFFERED: 1
+  FORCE_COLOR: 1
+  PYTHON_VERSION: "3.11"
+
+jobs:
+  checks-actsys-ui:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: ${{ github.event_name == 'pull_request' && 2 || 0 }}
+
+      - name: Set up Python ${{ env.PYTHON_VERSION }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Install Hatch
+        run: pip install --upgrade hatch
+
+      - name: List dependencies
+        run: hatch run all.py${{ env.PYTHON_VERSION }}:pip freeze
+
+      - name: Check requirements for Snyk are up to date
+        run: hatch run all.py${{ env.PYTHON_VERSION }}:update-snyk-requirements --check
+
+      - name: Find changed files to see if changelog fragment needed
+        id: changed-files
+        if: ${{ github.event_name == 'pull_request' }}
+        run: |
+          echo "changelog_fragment_added=$(git diff --name-only --diff-filter=A -r HEAD^1 HEAD -- 'changelog.d/*.md' | xargs)" >> $GITHUB_OUTPUT
+          echo "files_outside_docs_changed=$(git diff --name-only -r HEAD^1 HEAD -- ':!docs/*' | xargs)" >> $GITHUB_OUTPUT
+
+      - name: Fail if changelog fragment needed and wasn't added
+        if: ${{ steps.changed-files.outcome != 'skipped' && steps.changed-files.outputs.files_outside_docs_changed && !steps.changed-files.outputs.changelog_fragment_added}}
+        run: |
+          echo "No changelog fragment .md file within changelog.d was detected. Run 'hatch run changelog:add' to create such a fragment."
+          echo "If your PR contains changes that should be mentioned in the CHANGELOG in the next release, please uncomment the relevant section in your created fragment and describe the changes to the user."
+          echo "If your changes are not relevant for the CHANGELOG, please save and commit the file as is."
+          exit 1

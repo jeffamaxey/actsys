@@ -1,0 +1,37 @@
+name: Lint
+
+defaults:
+  run:
+    working-directory: actsys-core # but could be any folder
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches:
+      - main
+
+env:
+  PYTHONUNBUFFERED: 1
+  FORCE_COLOR: 1
+  PYTHON_VERSION: "3.11"
+
+jobs:
+  lint-actsys-all:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: ${{ github.event_name == 'pull_request' && 2 || 0 }}
+
+      - name: Set up Python ${{ env.PYTHON_VERSION }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Install Hatch
+        run: pip install --upgrade hatch
+
+      - name: Lint
+        run: hatch run lint

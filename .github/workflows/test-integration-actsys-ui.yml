@@ -1,0 +1,75 @@
+name: Integration tests for ActSys-UI
+
+defaults:
+  run:
+    working-directory: actsys-ui
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - actsys-ui/**
+  pull_request:
+    branches:
+      - main
+    paths:
+      - actsys-ui/**
+  schedule:
+    - cron: "30 10 * * 1" # run every Monday at 10:30 UTC
+
+env:
+  PYTHONUNBUFFERED: 1
+  FORCE_COLOR: 1
+
+jobs:
+  test-integration-actsys-ui:
+    name: test-integration-actsys-ui on Py${{ matrix.python-version }} ${{ matrix.label }}
+    environment: actsys_ui_secrets
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - python-version: "3.9"
+            hatch-env: all.py3.9
+          - python-version: "3.10"
+            hatch-env: all.py3.10
+          - python-version: "3.11"
+            hatch-env: all.py3.11
+          - python-version: "3.12"
+            hatch-env: all.py3.12
+          - python-version: "3.11"
+            hatch-env: lower-bounds
+            label: lower bounds
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: ${{ github.event_name == 'pull_request' && 2 || 0 }}
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install Hatch
+        run: pip install --upgrade hatch
+
+      - name: List dependencies
+        run: hatch run ${{ matrix.hatch-env }}:pip freeze
+
+      - name: Run actsys-ui integration tests with pypi actsys
+        run: |
+          export OPENAI_API_KEY=${{ secrets.OPENAI_API_KEY }}
+          export OPENAI_API_BASE=${{ secrets.OPENAI_API_BASE }}
+          hatch run ${{ matrix.hatch-env }}:test-integration
+
+      - name: Run actsys-ui integration tests with local actsys
+        run: |
+          export OPENAI_API_KEY=${{ secrets.OPENAI_API_KEY }}
+          export OPENAI_API_BASE=${{ secrets.OPENAI_API_BASE }}
+          cd ../actsys-core
+          hatch build
+          cd ../actsys-ui
+          hatch run ${{ matrix.hatch-env }}:pip install ../actsys-core/dist/actsys*.tar.gz
+          hatch run ${{ matrix.hatch-env }}:test-integration

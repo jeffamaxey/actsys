@@ -1,0 +1,15 @@
+extends: existence
+message: Consider your capitalization of '%s'
+level: suggestion
+tokens:
+  - kedro
+  - kedro-viz
+  - actsys
+  - ActSys-UI
+  - jupyter
+  - notebook
+  - github
+  - python
+  - quantumblack
+exceptions:
+  - "actsys-*"
